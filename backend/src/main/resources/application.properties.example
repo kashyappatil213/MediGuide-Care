@@ -1,0 +1,6 @@
+# Example Configuration for Local Development
+# Copy these values into your environment or run configuration in IntelliJ IDEA / CLI
+
+DB_URL=jdbc:postgresql://localhost:5432/mediguide_db
+DB_USERNAME=postgres
+DB_PASSWORD=your_postgres_password_here
