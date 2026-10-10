@@ -14,7 +14,7 @@ import java.util.Map;
  * REST controller for system health verification and basic status diagnostics.
  */
 @RestController
-@RequestMapping("/api/v1/health")
+@RequestMapping({"/api/health", "/api/v1/health"})
 @Tag(name = "Health & Diagnostics", description = "Endpoints for monitoring application and database connectivity")
 public class HealthController {
 

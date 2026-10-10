@@ -15,7 +15,7 @@ export default function App() {
     const startTime = performance.now();
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/health', {
+      const response = await fetch('http://localhost:8080/api/health', {
         headers: {
           'Accept': 'application/json',
         },
@@ -156,7 +156,7 @@ export default function App() {
                   {healthData?.status === 'UP' ? 'ONLINE (8080)' : (loading ? 'CONNECTING...' : 'OFFLINE')}
                 </span>
               </div>
-              <span className="metric-hint">REST Controller /api/v1/health</span>
+              <span className="metric-hint">REST Controller /api/health</span>
             </div>
 
             <div className="metric-box">
