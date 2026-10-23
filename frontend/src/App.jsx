@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import AuthCard from './components/AuthCard';
+import { API_BASE_URL } from './services/authApi';
+import { saveSession, clearSession, loadStoredSession, SUPPORTED_ROLES } from './services/sessionManager';
 import './App.css';
 
 export default function App() {
@@ -9,13 +12,57 @@ export default function App() {
   const [lastChecked, setLastChecked] = useState(null);
   const [showRawJson, setShowRawJson] = useState(false);
 
+  // Authentication state initialized from tab-scoped sessionStorage if present and valid
+  const [auth, setAuth] = useState(() => {
+    const stored = loadStoredSession();
+    return stored || {
+      isAuthenticated: false,
+      token: null,
+      user: null,
+    };
+  });
+
+  const handleLoginSuccess = ({ accessToken, user }) => {
+    // Safety check: only persist if user has a valid supported role
+    if (!user || !SUPPORTED_ROLES.includes(user.role)) {
+      handleLogout();
+      return;
+    }
+
+    saveSession({ token: accessToken, user });
+    setAuth({
+      isAuthenticated: true,
+      token: accessToken,
+      user,
+    });
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setAuth({
+      isAuthenticated: false,
+      token: null,
+      user: null,
+    });
+  };
+
+  // Fail-safe: if in-memory user ever lacks a supported role, clear and return to signed-out view
+  useEffect(() => {
+    if (auth.isAuthenticated && (!auth.user || !SUPPORTED_ROLES.includes(auth.user.role))) {
+      const timer = setTimeout(() => {
+        handleLogout();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [auth]);
+
   const fetchHealthStatus = async () => {
     setLoading(true);
     setError(null);
     const startTime = performance.now();
 
     try {
-      const response = await fetch('http://localhost:8080/api/health', {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
         headers: {
           'Accept': 'application/json',
         },
@@ -40,7 +87,10 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchHealthStatus();
+    const timer = setTimeout(() => {
+      fetchHealthStatus();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const isConnected = healthData?.status === 'UP' && healthData?.database === 'Connected';
@@ -56,14 +106,18 @@ export default function App() {
             </svg>
           </div>
           <div>
-            <span className="brand-title">MediGuide Care</span>
+            <span className="brand-title">MediGuide</span>
             <span className="brand-sub">Clinic Consultation System</span>
           </div>
         </div>
 
         <div className="nav-badges">
-          <span className="badge badge-accent">MCA Academic Project</span>
-          <span className="badge badge-phase">Phase 1: Foundation Active</span>
+          {auth.isAuthenticated && (
+            <span className="badge badge-user">
+              {auth.user.role === 'DOCTOR' ? '🩺 Dr. ' : '🧑‍⚕️ '}
+              {auth.user.fullName}
+            </span>
+          )}
         </div>
       </header>
 
@@ -71,20 +125,32 @@ export default function App() {
       <main className="main-content">
         {/* Hero Section */}
         <section className="hero-section">
-          <div className="hero-badge">Phase 1 Infrastructure Ready</div>
           <h1 className="hero-title">
             Doctor–Patient Consultation &amp; <br />
-            <span className="gradient-text">Follow-up Management System</span>
+            <span className="gradient-text">Clinic Management System</span>
           </h1>
           <p className="hero-subtitle">
-            Secure, reliable clinic management platform built with Spring Boot 3,
-            PostgreSQL 16, and modern React.js.
+            Secure, reliable clinic consultation and follow-up platform built with Spring Boot,
+            PostgreSQL, and React.
           </p>
 
           <div className="hero-actions">
+            <a
+              id="btn-access-portal"
+              href="#auth-portal"
+              className="btn btn-primary"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              {auth.isAuthenticated ? 'Active User Portal' : 'Sign In / Register'}
+            </a>
+
             <button
               id="btn-test-health"
-              className="btn btn-primary"
+              className="btn btn-secondary"
               onClick={fetchHealthStatus}
               disabled={loading}
             >
@@ -99,14 +165,14 @@ export default function App() {
                     <path d="M23 4v6h-6M1 20v-6h6" />
                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                   </svg>
-                  Re-test Connection
+                  Re-test Diagnostics
                 </>
               )}
             </button>
 
             <a
               id="link-swagger-docs"
-              href="http://localhost:8080/swagger-ui.html"
+              href={`${API_BASE_URL}/swagger-ui.html`}
               target="_blank"
               rel="noreferrer"
               className="btn btn-secondary"
@@ -118,10 +184,17 @@ export default function App() {
                 <line x1="16" y1="17" x2="8" y2="17" />
                 <polyline points="10 9 9 9 8 9" />
               </svg>
-              Open Swagger Docs
+              Swagger Docs
             </a>
           </div>
         </section>
+
+        {/* Authentication Section (Login & Registration UI) */}
+        <AuthCard
+          authState={auth}
+          onLoginSuccess={handleLoginSuccess}
+          onLogout={handleLogout}
+        />
 
         {/* Live Diagnostics Card */}
         <section className="diagnostics-card">
@@ -264,59 +337,14 @@ export default function App() {
             </ul>
           </div>
         </section>
-
-        {/* Project Roadmap for subsequent phases */}
-        <section className="roadmap-card">
-          <div className="roadmap-header">
-            <h3>Project Implementation Roadmap</h3>
-            <span className="roadmap-phase-count">Phase 1 of 4 Completed</span>
-          </div>
-
-          <div className="roadmap-steps">
-            <div className="step-item step-current">
-              <div className="step-number">1</div>
-              <div className="step-content">
-                <strong>Project Foundation &amp; Setup</strong>
-                <span>Spring Boot, PostgreSQL, React setup, and connectivity verification</span>
-              </div>
-              <span className="step-status status-active">Current Phase</span>
-            </div>
-
-            <div className="step-item">
-              <div className="step-number">2</div>
-              <div className="step-content">
-                <strong>Authentication &amp; Role-Based Access</strong>
-                <span>Doctor/Patient registration, login, Spring Security, and JWT validation</span>
-              </div>
-              <span className="step-status">Next Phase</span>
-            </div>
-
-            <div className="step-item">
-              <div className="step-number">3</div>
-              <div className="step-content">
-                <strong>Appointments &amp; Consultations</strong>
-                <span>Doctor availability, booking, consultation records, and prescriptions</span>
-              </div>
-              <span className="step-status">Upcoming</span>
-            </div>
-
-            <div className="step-item">
-              <div className="step-number">4</div>
-              <div className="step-content">
-                <strong>Follow-ups, Timeline &amp; QR Sharing</strong>
-                <span>Patient care timeline, medical reports, follow-ups, and secure QR record sharing</span>
-              </div>
-              <span className="step-status">Upcoming</span>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Footer */}
       <footer className="footer">
-        <p>MediGuide Care — Master of Computer Applications (MCA) Academic Project</p>
-        <p className="footer-sub">Simple, Secure Doctor–Patient Consultation and Follow-up Management System</p>
+        <p>MediGuide — Clinic Consultation System</p>
+        <p className="footer-sub">Simple and secure doctor–patient consultation and clinical follow-up management</p>
       </footer>
     </div>
   );
 }
+

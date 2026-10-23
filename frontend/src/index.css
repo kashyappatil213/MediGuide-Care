@@ -1,45 +1,62 @@
-/* MediGuide Care - Design System & Base CSS */
+/* MediGuide - Clean Healthcare Light Theme Design System */
 :root {
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
 
-  /* Color Palette - Premium Clinical Dark Theme */
-  --bg-primary: #090d16;
-  --bg-surface: #0f172a;
-  --bg-card: rgba(17, 24, 39, 0.75);
-  --bg-card-hover: rgba(30, 41, 59, 0.85);
+  /* Color Palette - Clean Professional Healthcare Light Theme */
+  --bg-primary: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-subtle: #f8fafc;
 
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-subtle: #64748b;
+  /* Text Hierarchy */
+  --text-main: #0f172a;       /* Dark charcoal for crisp contrast */
+  --text-muted: #475569;      /* Slate grey for secondary information */
+  --text-subtle: #64748b;     /* Muted grey for captions and timestamps */
 
+  /* Medical Blue & Teal Primary Accents */
   --primary: #0284c7;
-  --primary-light: #38bdf8;
-  --primary-glow: rgba(56, 189, 248, 0.25);
+  --primary-dark: #0369a1;
+  --primary-light: #e0f2fe;
+  --primary-glow: rgba(2, 132, 199, 0.15);
 
   --accent-teal: #0d9488;
-  --accent-teal-light: #2dd4bf;
+  --accent-teal-dark: #0f766e;
+  --accent-teal-light: #ccfbf1;
 
-  --success: #10b981;
-  --success-glow: rgba(16, 185, 129, 0.25);
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --error-glow: rgba(239, 68, 68, 0.25);
+  /* Status Colors */
+  --success: #16a34a;
+  --success-light: #dcfce7;
+  --success-text: #15803d;
 
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(56, 189, 248, 0.4);
+  --warning: #d97706;
+  --warning-light: #fef3c7;
+  --warning-text: #b45309;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --error: #dc2626;
+  --error-light: #fee2e2;
+  --error-text: #b91c1c;
+
+  /* Borders & Dividers */
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-focus: #0284c7;
+
+  /* Geometry */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-glow: 0 0 35px var(--primary-glow);
+  /* Restrained Modern Light Shadows */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
 
   --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 *, *::before, *::after {
@@ -56,27 +73,27 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.10) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(2, 132, 199, 0.08) 0px, transparent 50%);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.05) 0px, transparent 40%),
+    radial-gradient(at 100% 0%, rgba(13, 148, 136, 0.04) 0px, transparent 40%),
+    radial-gradient(at 50% 100%, rgba(2, 132, 199, 0.03) 0px, transparent 50%);
   background-attachment: fixed;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 a {
-  color: var(--primary-light);
+  color: var(--primary);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: #bae6fd;
+  color: var(--primary-dark);
 }
 
 button {
@@ -84,4 +101,14 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+}
+
+input, textarea, select {
+  font-family: var(--font-body);
+}
+
+/* Accessible focus ring */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }

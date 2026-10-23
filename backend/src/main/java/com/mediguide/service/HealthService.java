@@ -1,5 +1,7 @@
 package com.mediguide.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
@@ -14,6 +16,7 @@ import java.util.Map;
 @Service
 public class HealthService {
 
+    private static final Logger log = LoggerFactory.getLogger(HealthService.class);
     private final DataSource dataSource;
 
     public HealthService(DataSource dataSource) {
@@ -37,7 +40,8 @@ public class HealthService {
             health.put("databaseProduct", connection.getMetaData().getDatabaseProductName());
             health.put("databaseVersion", connection.getMetaData().getDatabaseProductVersion());
         } catch (Exception e) {
-            health.put("database", "Error: " + e.getMessage());
+            log.warn("Database health check failed: {}", e.getMessage());
+            health.put("database", "Disconnected");
         }
 
         return health;
