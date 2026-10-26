@@ -57,7 +57,10 @@ export default function App() {
   const checkHealth = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/health`, {
-        headers: { 'Accept': 'application/json' },
+        headers: {
+          'Accept': 'application/json',
+          'bypass-tunnel-reminder': 'true',
+        },
       });
       if (response.ok) {
         const data = await response.json();

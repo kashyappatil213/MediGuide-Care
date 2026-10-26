@@ -23,6 +23,10 @@ public class CorsConfig implements WebMvcConfigurer {
     private static final List<String> DEFAULT_ORIGIN_PATTERNS = List.of(
             "http://localhost:[*]",
             "http://127.0.0.1:[*]",
+            "https://localhost:[*]",
+            "https://127.0.0.1:[*]",
+            "https://*.vercel.app",
+            "https://*.loca.lt",
             "http://192.168.*:[*]",
             "http://10.*:[*]",
             "http://172.16.*:[*]",
