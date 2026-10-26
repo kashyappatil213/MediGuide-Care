@@ -68,3 +68,27 @@ This changelog records the chronological development progression of MediGuide Ca
   - Updated doctor portal profile management form to configure both numbers.
   - Added clinic phone display on patient doctor search result cards.
   - Verified that doctor personal phone numbers are strictly excluded from public doctor profiles and search.
+
+---
+
+## [Feature 6] — Email Verification & Notification Foundation (Latest)
+- **Email Verification Architecture:**
+  - Replaced planned SMS notifications with email verification and notification foundation using `spring-boot-starter-mail` and configurable SMTP settings.
+  - Added `email_verified` flag to `User` entity (`users.email_verified`), defaulting to `true` on existing accounts and test fixtures to preserve backward compatibility, and set to `false` on new user registration.
+  - Implemented `EmailVerificationToken` entity storing 64-character SHA-256 token hashes, creation timestamps, expiration timestamps, and last-sent timestamps. Raw plaintext tokens are never persisted in the database.
+- **Verification & Resend Endpoints:**
+  - `POST /api/v1/auth/verify-email`: Validates raw token hash against the database, sets user `email_verified = true`, and enforces single-use behavior by deleting the consumed token immediately.
+  - `POST /api/v1/auth/resend-verification`: Dispatches a fresh verification token. Enforces rate-limiting cooldown (default 60 seconds) returning HTTP `429 Too Many Requests` with a `Retry-After` header.
+- **Anti-Enumeration & Security Guarantees:**
+  - Uniform response semantics for non-existent or already-verified accounts ("If an unverified account exists for that email, a verification link has been sent") prevents account enumeration.
+  - Verification tokens are never logged or exposed in API registration responses or user profiles.
+  - Deterministic test execution via `TestMailConfig` mock `JavaMailSender` prevents outbound network calls during automated test suites.
+- **Progressive Access Policy (Soft Enforcement):**
+  - Unverified patients and doctors can log in to view portal features and are presented with an unverified email alert banner containing an inline "✉ Resend Email" button.
+  - High-trust actions are strictly protected: unverified patients cannot book appointments (`AppointmentService`), and unverified doctors cannot publish availability schedules (`DoctorAvailabilityService`).
+- **Frontend Integration:**
+  - `AuthCard.jsx`: Detects `?verify-email=<token>` URL query parameter, triggers automatic verification with clear success/error banners, cleans the browser URL history, and provides a collapsible "Need another verification link?" section.
+  - `PatientPortal.jsx` & `DoctorPortal.jsx`: Added responsive warning alert banners for unverified accounts with inline single-click resend capabilities.
+- **Automated Test Suite Expansion:**
+  - Added `EmailVerificationServiceTest` (9 unit tests) and `EmailVerificationControllerTest` (8 integration tests).
+  - Total automated backend tests increased from 281 to 298 passing tests (100% pass rate).

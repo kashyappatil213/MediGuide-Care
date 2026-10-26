@@ -116,6 +116,10 @@ public class DoctorAvailabilityService {
             throw new AccessDeniedException("User account does not possess DOCTOR privileges");
         }
 
+        if (!doctor.isEmailVerified()) {
+            throw new AppointmentValidationException("Email verification is required to configure doctor availability schedules. Please verify your email address.");
+        }
+
         List<DoctorAvailability> conflicts = availabilityRepository.findOverlappingActiveAvailabilities(
                 principal.getId(), startTime, endTime);
         if (!conflicts.isEmpty()) {
@@ -173,6 +177,10 @@ public class DoctorAvailabilityService {
 
         if (doctor.getRole() != Role.DOCTOR) {
             throw new AccessDeniedException("User account does not possess DOCTOR privileges");
+        }
+
+        if (!doctor.isEmailVerified()) {
+            throw new AppointmentValidationException("Email verification is required to configure doctor availability schedules. Please verify your email address.");
         }
 
         List<AvailabilityResponse> successfulSlots = new ArrayList<>();

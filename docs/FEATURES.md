@@ -29,8 +29,7 @@ This document provides a comprehensive inventory of all features in the MediGuid
 | 11 | **Consultation History Timeline & Historical Queues** | Full-Stack | [Implemented & Verified] | Patient & doctor chronological consultation queries |
 | 12 | **AI-Assisted Clinical History Summarizer** | Full-Stack | [Implemented & Verified] | Structured prompts, doctor-in-the-loop disclosure tests |
 | 13 | **Patient Contact Details (Private Phone Number)** | Full-Stack | [Implemented & Verified] | Private view/update tests, isolation & RBAC enforcement |
-| 14 | **Doctor Contact Details (Clinic Public vs Personal Private)** | Full-Stack | [Implemented & Verified] | Public exclusion tests for doctor personal phone |
-| 15 | **SMS / WhatsApp Notification Delivery** | Integration | [Planned] | N/A (Deferred to future cloud communication provider) |
+| 15 | **Email Verification & Notification Foundation** | Full-Stack | [Implemented & Verified] | Unit & Controller tests (token hashing, expiry, rate limits, anti-enumeration) |
 | 16 | **QR-Code Based Health Summary Sharing** | Frontend | [Planned] | Roadmap item for mobile client phase |
 | 17 | **Mobile App & Responsive Layout Polish** | Frontend | [Partially Implemented] | Desktop-optimized with responsive flexbox/grid foundations |
 
@@ -123,11 +122,31 @@ This document provides a comprehensive inventory of all features in the MediGuid
   - **Personal Phone Number:** Stored in `doctor_profiles.personal_phone`. Strictly confidential; returned only to the doctor in `DoctorProfileResponse` and excluded from `PublicDoctorProfileResponse` and public search.
 - **Format Validation:** Flexible regex pattern `^[+]?[0-9\s\-()]{7,20}$` supports domestic and international formats without enforcing a single country code.
 
+### 10. Email Verification & Notification Foundation (Feature 6)
+- **Email Delivery Integration:** Powered by Spring Boot Starter Mail (`JavaMailSender`) with configurable SMTP environment variables (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `FRONTEND_URL`).
+- **Cryptographic Token Lifecycle:**
+  - High-entropy 32-byte Base64URL random token generated via `SecureRandom`.
+  - Stored strictly as a 64-character SHA-256 hash in `email_verification_tokens`. Raw plaintext tokens are never persisted in the database.
+  - 24-hour expiration window; expired tokens are cleaned up upon detection.
+  - Strict single-use consumption: tokens are permanently deleted immediately upon successful verification.
+- **Controlled Resend & Rate Limiting:**
+  - 60-second cooldown per user account; requests within cooldown return HTTP `429 Too Many Requests` with a standard `Retry-After` header.
+  - Anti-enumeration defense: requests for non-existent or already-verified emails return the identical success message ("If an unverified account exists for that email, a verification link has been sent").
+- **Progressive Access Policy (Soft Enforcement):**
+  - Unverified accounts can log in with full credentials and view read-only dashboard data.
+  - Portals display clear warning banners indicating unverified status with an inline "✉ Resend Email" button.
+  - High-trust actions are strictly protected:
+    - Patients cannot book appointments without a verified email (`AppointmentService`).
+    - Doctors cannot publish availability schedules without a verified email (`DoctorAvailabilityService`).
+- **Zero Token Leakage:** Verification tokens are never returned in JSON registration responses, login payloads, or logged to application output.
+- **Deterministic Testing:** Automated tests run against `TestMailConfig` mock `JavaMailSender`, preventing outbound network traffic and ensuring 100% test reliability.
+
 ---
 
 ## ⚠️ Known Limitations & Current Operational Constraints
 
-1. **SMS Gateway:** Phone numbers are validated and stored, but automated SMS/OTP verification is not yet integrated.
-2. **Third-Party AI API Dependency:** The AI summarizer requires an active internet connection and valid API key when running against external providers like OpenAI. In development/testing, an in-memory fallback/mock is used.
-3. **Database Schema Strategy:** Development uses Hibernate `ddl-auto=update`. In enterprise production, Flyway or Liquibase migrations should be configured.
-4. **Mobile Responsiveness:** The current UI is fully usable on desktop and modern tablet viewports; comprehensive mobile responsiveness optimization is slated for the dedicated mobile sprint.
+1. **Email SMTP Provider Limits:** Real-world dispatch depends on external SMTP providers (such as Gmail, Amazon SES, or SendGrid). For example, Gmail SMTP requires a 16-character Google App Password (with 2-Step Verification enabled) and enforces standard sending quotas (typically 500 emails/day for free accounts). Local automated tests use mock `JavaMailSender` and do not require internet or live credentials.
+2. **Asynchronous Retry Queues:** Email verification dispatch is synchronous within registration and resend transactions, protected by graceful try-catch degradation (SMTP failure logs a warning and does not roll back user registration). Distributed message queues (RabbitMQ / Kafka / Celery) and automated dead-letter retries are deferred to subsequent enterprise scaling sprints.
+3. **Third-Party AI API Dependency:** The AI summarizer requires an active internet connection and valid API key when running against external providers like OpenAI. In development/testing, an in-memory fallback/mock is used.
+4. **Database Schema Strategy:** Development uses Hibernate `ddl-auto=update`. In enterprise production, Flyway or Liquibase migrations should be configured.
+5. **Mobile Responsiveness:** The current UI is fully usable on desktop and modern tablet viewports; comprehensive mobile responsiveness optimization is slated for the dedicated mobile sprint.

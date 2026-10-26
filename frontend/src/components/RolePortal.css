@@ -101,6 +101,57 @@
   margin: 0;
 }
 
+/* Mobile & Desktop Section Quick-Jump Navigation */
+.portal-quick-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.portal-quick-nav::-webkit-scrollbar {
+  height: 4px;
+}
+
+.portal-quick-nav::-webkit-scrollbar-thumb {
+  background: var(--border-subtle, #cbd5e1);
+  border-radius: 4px;
+}
+
+.quick-nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 13px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--bg-surface-elevated, #f1f5f9);
+  color: var(--text-muted, #334155);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  border: 1px solid var(--border-subtle, #cbd5e1);
+  transition: all var(--transition-fast, 0.15s ease);
+  min-height: 38px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.quick-nav-pill:hover,
+.quick-nav-pill:focus-visible {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.quick-nav-pill:active {
+  transform: translateY(0);
+}
+
 /* Workflow Container & Sections */
 .portal-workflow {
   display: flex;
@@ -189,6 +240,39 @@
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #b91c1c;
+}
+
+.portal-alert.alert-warning {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.btn-resend-inline {
+  background: #d97706;
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast, 0.2s ease);
+  flex-shrink: 0;
+}
+
+.btn-resend-inline:hover:not(:disabled) {
+  background: #b45309;
+}
+
+.btn-resend-inline:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .alert-close-btn {
@@ -2014,6 +2098,390 @@
 .btn-save-patient-profile:hover:not(:disabled) {
   background: linear-gradient(135deg, #0f766e, #115e59);
   box-shadow: 0 2px 4px rgba(13, 148, 136, 0.25);
+}
+
+/* ==========================================================================
+   Mobile Quick Section Navigation Bar
+   ========================================================================== */
+.portal-quick-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  margin: -4px 0 12px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.portal-quick-nav::-webkit-scrollbar {
+  height: 4px;
+}
+
+.portal-quick-nav::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.quick-nav-pill {
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 7px 13px;
+  border-radius: var(--radius-full, 9999px);
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.quick-nav-pill:hover,
+.quick-nav-pill:active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+}
+
+.quick-nav-pill.patient-pill:hover,
+.quick-nav-pill.patient-pill:active {
+  background: #0d9488;
+  color: #ffffff;
+  border-color: #0d9488;
+}
+
+/* ==========================================================================
+   Comprehensive Mobile & Tablet Responsive Adjustments
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .role-portal-card {
+    padding: 18px 14px;
+    border-radius: var(--radius-md, 10px);
+  }
+
+  .portal-header {
+    gap: 8px;
+  }
+
+  .portal-badge-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .portal-greeting {
+    font-size: 1.25rem;
+  }
+
+  .workflow-section {
+    padding: 16px 12px;
+  }
+
+  .clinical-content-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .form-row-2 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .appointment-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .app-details-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .appointment-card-actions {
+    width: 100%;
+    justify-content: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .doctor-actions-group {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-complete-action,
+  .btn-cancel-action,
+  .btn-clinical-action {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+
+  .doctor-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .role-portal-card {
+    padding: 14px 10px;
+    border-radius: var(--radius-sm, 8px);
+    gap: 16px;
+  }
+
+  .portal-header {
+    padding-bottom: 10px;
+  }
+
+  .portal-role-tag,
+  .portal-public-id-badge {
+    font-size: 0.74rem;
+    padding: 3px 9px;
+  }
+
+  .portal-greeting {
+    font-size: 1.12rem;
+  }
+
+  .portal-subtitle {
+    font-size: 0.76rem;
+  }
+
+  .portal-alert {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 10px;
+    gap: 8px;
+  }
+
+  .portal-alert.alert-warning {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .btn-resend-inline {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 14px;
+    font-size: 0.84rem;
+  }
+
+  .workflow-section {
+    padding: 14px 10px;
+    border-radius: var(--radius-sm, 6px);
+    gap: 14px;
+  }
+
+  .section-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .section-title {
+    font-size: 0.98rem;
+  }
+
+  .btn-refresh {
+    width: 100%;
+    justify-content: center;
+    min-height: 38px;
+  }
+
+  .doctor-search-box {
+    padding: 12px 10px;
+  }
+
+  .search-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .search-actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .btn-search-primary,
+  .btn-search-reset {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+
+  .slots-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .slot-card {
+    padding: 12px 10px;
+  }
+
+  .btn-slot {
+    min-height: 44px;
+  }
+
+  .booking-panel {
+    padding: 12px 10px;
+  }
+
+  .booking-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .booking-form-actions .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .app-details-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .appointment-card {
+    padding: 12px 10px;
+  }
+
+  .clinical-drawer {
+    padding: 12px 8px;
+  }
+
+  .clinical-box {
+    padding: 12px 8px;
+  }
+
+  .box-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .box-form-actions .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+
+  .ai-summarizer-control {
+    padding: 12px 8px;
+  }
+
+  .ai-summarizer-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .btn-generate-ai {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .ai-disclosure-backdrop {
+    padding: 8px;
+  }
+
+  .ai-disclosure-modal {
+    max-width: 100%;
+    padding: 14px 10px;
+  }
+
+  .ai-disclosure-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .btn-confirm-disclosure,
+  .btn-cancel-disclosure {
+    width: 100%;
+    min-height: 42px;
+    justify-content: center;
+  }
+
+  .ai-summary-meta-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .ai-summary-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .btn-copy-summary,
+  .btn-regenerate-summary,
+  .btn-close-summary {
+    width: 100%;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  .profile-actions-row {
+    width: 100%;
+  }
+
+  .btn-save-profile,
+  .btn-save-patient-profile {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .history-card {
+    padding: 12px 10px;
+  }
+
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .history-rx-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .role-portal-card {
+    padding: 10px 6px;
+  }
+
+  .workflow-section {
+    padding: 10px 6px;
+  }
+
+  .portal-greeting {
+    font-size: 1.05rem;
+  }
 }
 
 

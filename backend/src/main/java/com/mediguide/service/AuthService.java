@@ -13,6 +13,7 @@ import com.mediguide.repository.UserRepository;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,15 +32,26 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final Validator validator;
     private final JwtService jwtService;
+    private final EmailVerificationService emailVerificationService;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        Validator validator,
                        JwtService jwtService) {
+        this(userRepository, passwordEncoder, validator, jwtService, null);
+    }
+
+    @Autowired
+    public AuthService(UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       Validator validator,
+                       JwtService jwtService,
+                       EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.validator = validator;
         this.jwtService = jwtService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     /**
@@ -91,7 +103,7 @@ public class AuthService {
         // 6. Generate role-prefixed, unique public ID with collision retry
         String publicId = generateUniquePublicId(request.getRole());
 
-        // 7. Persist new user entity
+        // 7. Persist new user entity (newly registered users start with emailVerified = false)
         User user = new User(
                 request.getFullName().trim(),
                 normalizedEmail,
@@ -99,10 +111,16 @@ public class AuthService {
                 request.getRole(),
                 publicId
         );
+        user.setEmailVerified(false);
 
         User savedUser = userRepository.save(user);
 
-        // 8. Return safe response including public ID, without password or sensitive hash
+        // 8. Generate and dispatch verification token if email verification service is present
+        if (emailVerificationService != null) {
+            emailVerificationService.generateAndSendVerificationToken(savedUser);
+        }
+
+        // 9. Return safe response including public ID, without password or sensitive hash
         return UserResponse.fromEntity(savedUser);
     }
 

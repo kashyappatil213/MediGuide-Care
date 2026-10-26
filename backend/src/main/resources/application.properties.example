@@ -14,3 +14,17 @@ AI_MODEL=gpt-4o-mini
 AI_CONNECT_TIMEOUT_SECONDS=5
 AI_READ_TIMEOUT_SECONDS=15
 AI_MAX_INPUT_CHARS=6000
+
+# Optional SMTP Email Configuration (e.g. Gmail SMTP, Mailtrap, or SendGrid)
+# For Gmail: Use smtp.gmail.com, port 587, your email, and a 16-character App Password (not your Google account password).
+# Note: Free providers like Gmail impose daily sending limits (typically 500 emails/day).
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_clinic_email@gmail.com
+SMTP_PASSWORD=your_16_character_app_password
+SMTP_FROM=your_clinic_email@gmail.com
+FRONTEND_URL=http://localhost:5173
+EMAIL_VERIFICATION_COOLDOWN_SECONDS=60
+EMAIL_VERIFICATION_EXPIRY_HOURS=24
+# Optional: Additional allowed CORS origins (RFC 1918 LAN origins like 192.168.* and 10.* are allowed by default)
+# CORS_ALLOWED_ORIGINS=http://10.0.3.224:5173

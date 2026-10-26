@@ -14,20 +14,26 @@ public class UserResponse {
     private String fullName;
     private String email;
     private Role role;
+    private boolean emailVerified;
 
     public UserResponse() {
     }
 
     public UserResponse(Long id, String fullName, String email, Role role) {
-        this(id, null, fullName, email, role);
+        this(id, null, fullName, email, role, true);
     }
 
     public UserResponse(Long id, String publicId, String fullName, String email, Role role) {
+        this(id, publicId, fullName, email, role, true);
+    }
+
+    public UserResponse(Long id, String publicId, String fullName, String email, Role role, boolean emailVerified) {
         this.id = id;
         this.publicId = publicId;
         this.fullName = fullName;
         this.email = email;
         this.role = role;
+        this.emailVerified = emailVerified;
     }
 
     /**
@@ -45,7 +51,8 @@ public class UserResponse {
                 user.getPublicId(),
                 user.getFullName(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.isEmailVerified()
         );
     }
 
@@ -87,5 +94,13 @@ public class UserResponse {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
     }
 }

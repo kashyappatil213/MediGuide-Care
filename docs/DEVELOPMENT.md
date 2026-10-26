@@ -44,6 +44,16 @@ Configure environment variables via CLI or IDE run configurations:
 | `DB_PASSWORD` | **Yes** | *(Empty)* | Database user password |
 | `JWT_SECRET` | **Yes** | *(Empty)* | HMAC-SHA256 signing key (min 32 characters) |
 | `JWT_EXPIRATION_MINUTES` | No | `15` | Access token lifespan |
+| `SMTP_HOST` | Optional | `smtp.gmail.com` | Outgoing SMTP mail server host |
+| `SMTP_PORT` | Optional | `587` | SMTP server port (587 for TLS, 465 for SSL) |
+| `SMTP_USERNAME` | Optional | *(Empty)* | SMTP account username (e.g., your-email@gmail.com) |
+| `SMTP_PASSWORD` | Optional | *(Empty)* | SMTP account password or 16-char Google App Password |
+| `SMTP_AUTH` | Optional | `true` | Enable SMTP authentication |
+| `SMTP_STARTTLS` | Optional | `true` | Enable STARTTLS command encryption |
+| `SMTP_FROM` | Optional | `no-reply@mediguide.local` | Default sender address on verification emails |
+| `FRONTEND_URL` | Optional | `http://localhost:5173` | Client URL used to construct verification links |
+| `EMAIL_VERIFICATION_COOLDOWN_SECONDS` | Optional | `60` | Cooldown period between resend verification requests |
+| `EMAIL_VERIFICATION_EXPIRY_HOURS` | Optional | `24` | Token lifespan before expiration |
 | `AI_API_KEY` | Optional | *(Empty)* | OpenAI or compatible API key for summarizer |
 | `AI_BASE_URL` | Optional | `https://api.openai.com/v1` | LLM provider endpoint |
 | `AI_MODEL` | Optional | `gpt-4o-mini` | LLM model identifier |
@@ -57,6 +67,11 @@ cd backend
 # Set required environment variables
 $env:DB_PASSWORD="your_postgres_password"
 $env:JWT_SECRET="your_secure_development_jwt_secret_key_32_chars_min"
+
+# Optional: Real email delivery via Gmail SMTP (requires App Password)
+# $env:SMTP_USERNAME="your-clinic@gmail.com"
+# $env:SMTP_PASSWORD="your_16_char_app_password"
+# $env:SMTP_FROM="your-clinic@gmail.com"
 
 # Optional: Set AI summarizer key if testing live LLM generation
 # $env:AI_API_KEY="sk-..."
@@ -80,7 +95,31 @@ mvn spring-boot:run
 
 ---
 
-### 3. Frontend Configuration & Startup (React + Vite)
+### 4. Configuring Real Email Delivery (e.g. Gmail SMTP)
+
+For local development and automated testing, mock email dispatch (`TestMailConfig`) is active by default in the test suite so no external accounts are required.
+
+To test real email delivery to your inbox during manual testing:
+
+1. **Enable 2-Step Verification** on your Google Account (`myaccount.google.com/security`).
+2. **Generate an App Password:**
+   - Navigate to **Security** → **2-Step Verification** → **App passwords**.
+   - Create an app password with name "MediGuide Care".
+   - Copy the generated 16-character password (e.g. `abcd efgh ijkl mnop`).
+3. **Launch Backend with SMTP Credentials:**
+   ```powershell
+   $env:SMTP_USERNAME="yourname@gmail.com"
+   $env:SMTP_PASSWORD="abcdefghijklmnop"
+   $env:SMTP_FROM="yourname@gmail.com"
+   mvn spring-boot:run
+   ```
+4. **Provider Limits & Considerations:**
+   - Gmail imposes sending limits (typically 500 emails/day for standard Gmail accounts).
+   - If SMTP credentials are omitted, the backend runs normally; token generation and verification endpoints function, and dispatch failures log a warning without crashing or rolling back user registration.
+
+---
+
+### 5. Frontend Configuration & Startup (React + Vite)
 
 The frontend client is located in the `frontend/` directory.
 
@@ -115,10 +154,12 @@ Backend tests run against an isolated in-memory H2 database configured in Postgr
 ```powershell
 cd backend
 
-# Run the complete test suite (281 tests)
+# Run the complete test suite (298 tests)
 mvn test
 
 # Run a specific test class
+mvn test -Dtest=EmailVerificationServiceTest
+mvn test -Dtest=EmailVerificationControllerTest
 mvn test -Dtest=PatientProfileControllerTest
 mvn test -Dtest=DoctorProfileControllerTest
 mvn test -Dtest=CompleteWorkflowEndToEndTest

@@ -112,3 +112,31 @@ input, textarea, select {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
+
+/* Global Mobile Viewport & Accessibility Rules */
+html {
+  overflow-x: hidden;
+  width: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
+}
+
+/* Prevent iOS Safari automatic zoom on inputs by ensuring >= 16px */
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

@@ -47,16 +47,18 @@ graph TD
     subgraph CoreServices["Business Logic & Service Layer"]
         AuthSvc["AuthService & PasswordEncoder"]
         JwtSvc["JwtService (Stateless Tokens)"]
+        EmailSvc["EmailService & VerificationService"]
         ApptSvc["AppointmentService (Conflict Prevention)"]
         ConsultSvc["ConsultationService"]
         AiSvc["ClinicalHistorySummaryService"]
     end
 
-    subgraph Data["Persistence & AI Services"]
+    subgraph Data["Persistence, AI & Mail Services"]
         Repos["Spring Data JPA Repositories"]
         Postgres[("PostgreSQL 16 Database")]
         AiClient["OpenAiCompatibleClinicalSummaryClient"]
         LlmApi["External LLM Provider (Optional)"]
+        Smtp["External SMTP / JavaMailSender"]
     end
 
     SPA --> ApiClient
@@ -69,6 +71,7 @@ graph TD
     Repos --> Postgres
     AiSvc --> AiClient
     AiClient -.-> LlmApi
+    EmailSvc -.-> Smtp
 ```
 
 ---
@@ -82,6 +85,7 @@ graph TD
 | **Persistence / ORM** | Spring Data JPA, Hibernate 6 | Relational mapping, pessimistic concurrency, transactional integrity |
 | **Database** | PostgreSQL 16 (Dev/Prod), H2 (Testing) | ACID compliance, relational integrity, in-memory test runner |
 | **API Documentation** | springdoc-openapi 2.5.0 | Interactive Swagger UI (`/swagger-ui.html`) & OpenAPI v3 specs |
+| **Email & Verification** | Spring Boot Starter Mail, JavaMailSender | Configurable SMTP (TLS/SSL), SHA-256 token hashing, cooldown rate limits |
 | **Frontend Framework** | React 19, Vite 8 | Single-Page Application, modular hooks, stateful portals |
 | **Styling & UI** | Custom Vanilla CSS Design System | Responsive healthcare design, glassmorphism accents, micro-animations |
 | **AI Integration** | Spring WebClient (HTTP/1.1) | Pluggable OpenAI-compatible REST client for history summarization |
@@ -190,6 +194,14 @@ MediGuide Care/
 - **Patient Profile:** Private contact phone number viewable and editable only by the authenticated patient.
 - **Doctor Profile:** Distinct public clinic contact number (for patient appointments) and private personal phone number (strictly confidential).
 
+### 7. Email Verification & Notification Foundation
+- **Cryptographic Token Lifecycle:** 32-byte Base64URL high-entropy tokens hashed with SHA-256 before database storage in `email_verification_tokens`. Tokens are single-use and expire in 24 hours.
+- **Zero Token Leakage:** Verification tokens are never logged or returned in registration responses, profiles, or public endpoints.
+- **Rate-Limited Resend:** Enforces a 60-second cooldown per account returning HTTP 429 with `Retry-After` header.
+- **Anti-Enumeration Protection:** Resend requests for non-existent or already-verified emails return uniform success messaging.
+- **Progressive Access Policy:** Unverified users can log in and view their dashboard with verification alert banners; high-trust actions (appointment booking and doctor availability publishing) require email verification.
+- **Interactive UI Verification:** Seamless auto-verification via URL query parameters (`?verify-email=...`) with inline resend buttons in both patient and doctor portals.
+
 ---
 
 ## 🚀 Getting Started Locally
@@ -221,6 +233,11 @@ cd backend
 # Required credentials (replace with your local values)
 $env:DB_PASSWORD="your_postgres_password"
 $env:JWT_SECRET="your_secure_development_jwt_secret_key_32_chars_min"
+
+# Optional: Real email delivery via Gmail SMTP (requires App Password)
+# $env:SMTP_USERNAME="yourname@gmail.com"
+# $env:SMTP_PASSWORD="your_16_char_app_password"
+# $env:SMTP_FROM="yourname@gmail.com"
 
 # Optional: Set AI summarizer key if testing external LLM integration
 # $env:AI_API_KEY="sk-..."
@@ -260,10 +277,10 @@ npm run dev
 
 ## 🧪 Verification & Automated Testing
 
-MediGuide Care maintains a comprehensive test suite covering unit, repository, controller integration, concurrency, and end-to-end user workflows.
+MediGuide Care maintains a comprehensive test suite covering unit, repository, controller integration, concurrency, email verification, and end-to-end user workflows.
 
 ```powershell
-# 1. Run all backend automated tests (281 tests against in-memory H2 database)
+# 1. Run all backend automated tests (298 tests against in-memory H2 database)
 cd backend
 mvn test
 

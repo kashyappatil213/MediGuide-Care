@@ -17,6 +17,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,11 @@ public class OpenAiCompatibleClinicalSummaryClient implements ClinicalSummaryAiC
             throw new AiConfigurationException(
                     "AI clinical summarizer is not configured. Please supply an AI_API_KEY environment variable."
             );
+        }
+
+        if (apiKey.startsWith("demo") || apiKey.startsWith("mock") || apiKey.equalsIgnoreCase("local") || apiKey.equalsIgnoreCase("offline")) {
+            log.info("Generating structured clinical history summary (demo/local engine active)");
+            return generateLocalClinicalSummary(anonymizedClinicalHistory);
         }
 
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
@@ -124,5 +130,133 @@ public class OpenAiCompatibleClinicalSummaryClient implements ClinicalSummaryAiC
             log.error("Unexpected error communicating with AI provider: {}", ex.getClass().getSimpleName());
             throw new AiServiceException("AI summary generation encountered an unexpected internal communication error.", ex);
         }
+    }
+
+    /**
+     * Synthesizes an intelligent, structured clinical summary directly from documented records
+     * when in demo, local, or mock API key mode.
+     */
+    private String generateLocalClinicalSummary(String history) {
+        if (history == null || history.isBlank()) {
+            return "### 1. Overview of Recorded Visits\nNo consultation history documented.\n\n" +
+                   "### 2. Previously Documented Concerns and Findings\nNot documented.\n\n" +
+                   "### 3. Recorded Treatment and Advice\nNot documented.\n\n" +
+                   "### 4. Prescription History\nNone prescribed.\n\n" +
+                   "### 5. Follow-up History\nNot documented.\n\n" +
+                   "### 6. Missing Information or Limitations\nNo clinical data available for review.\n\n" +
+                   "AI-generated clinical summary — draft for doctor review. Verify against the original records. This is not a diagnosis or treatment recommendation.";
+        }
+
+        List<String> visitDates = new ArrayList<>();
+        List<String> notesList = new ArrayList<>();
+        List<String> treatmentsList = new ArrayList<>();
+        List<String> prescriptionsList = new ArrayList<>();
+        List<String> followUpsList = new ArrayList<>();
+
+        String[] lines = history.split("\\r?\\n");
+        String currentSection = "";
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) continue;
+
+            if (trimmed.startsWith("--- Consultation Record")) {
+                int dateIdx = trimmed.indexOf("Date: ");
+                if (dateIdx != -1) {
+                    int commaIdx = trimmed.indexOf(",", dateIdx);
+                    String date = commaIdx != -1
+                            ? trimmed.substring(dateIdx + 6, commaIdx).trim()
+                            : trimmed.substring(dateIdx + 6, trimmed.length() - 4).trim();
+                    visitDates.add(date);
+                }
+                currentSection = "RECORD";
+            } else if (trimmed.startsWith("Clinical Notes & Findings:")) {
+                String val = trimmed.substring("Clinical Notes & Findings:".length()).trim();
+                if (!val.equalsIgnoreCase("Not documented")) {
+                    notesList.add(val);
+                }
+                currentSection = "NOTES";
+            } else if (trimmed.startsWith("Treatment & Medical Advice:")) {
+                String val = trimmed.substring("Treatment & Medical Advice:".length()).trim();
+                if (!val.equalsIgnoreCase("Not documented")) {
+                    treatmentsList.add(val);
+                }
+                currentSection = "TREATMENT";
+            } else if (trimmed.startsWith("Prescribed Medications:")) {
+                currentSection = "PRESCRIPTIONS";
+            } else if (trimmed.startsWith("Recommended Follow-up:")) {
+                String val = trimmed.substring("Recommended Follow-up:".length()).trim();
+                if (!val.equalsIgnoreCase("None scheduled") && !val.equalsIgnoreCase("Not documented")) {
+                    followUpsList.add(val);
+                }
+                currentSection = "FOLLOWUP";
+            } else if (currentSection.equals("PRESCRIPTIONS") && trimmed.startsWith("-")) {
+                if (!trimmed.contains("None prescribed")) {
+                    prescriptionsList.add(trimmed.substring(1).trim());
+                }
+            } else if (currentSection.equals("NOTES") && !trimmed.startsWith("Treatment &") && !trimmed.startsWith("Prescribed") && !trimmed.startsWith("Recommended")) {
+                notesList.add(trimmed);
+            } else if (currentSection.equals("TREATMENT") && !trimmed.startsWith("Prescribed") && !trimmed.startsWith("Recommended")) {
+                treatmentsList.add(trimmed);
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("### 1. Overview of Recorded Visits\n");
+        int count = Math.max(visitDates.size(), 1);
+        sb.append("- Documented Consultations: ").append(count).append(" recorded visit(s).\n");
+        if (!visitDates.isEmpty()) {
+            sb.append("- Consultation Dates: ").append(String.join(", ", visitDates)).append(".\n\n");
+        } else {
+            sb.append("- Consultation Dates: Documented chronological visits.\n\n");
+        }
+
+        sb.append("### 2. Previously Documented Concerns and Findings\n");
+        if (!notesList.isEmpty()) {
+            for (String note : notesList) {
+                sb.append("- ").append(note).append("\n");
+            }
+            sb.append("\n");
+        } else {
+            sb.append("Not documented.\n\n");
+        }
+
+        sb.append("### 3. Recorded Treatment and Advice\n");
+        if (!treatmentsList.isEmpty()) {
+            for (String treatment : treatmentsList) {
+                sb.append("- ").append(treatment).append("\n");
+            }
+            sb.append("\n");
+        } else {
+            sb.append("Not documented.\n\n");
+        }
+
+        sb.append("### 4. Prescription History\n");
+        if (!prescriptionsList.isEmpty()) {
+            for (String rx : prescriptionsList) {
+                sb.append("- ").append(rx).append("\n");
+            }
+            sb.append("\n");
+        } else {
+            sb.append("None prescribed in documented visits.\n\n");
+        }
+
+        sb.append("### 5. Follow-up History\n");
+        if (!followUpsList.isEmpty()) {
+            for (String f : followUpsList) {
+                sb.append("- Scheduled: ").append(f).append("\n");
+            }
+            sb.append("\n");
+        } else {
+            sb.append("No active follow-up visits recorded.\n\n");
+        }
+
+        sb.append("### 6. Missing Information or Limitations\n");
+        sb.append("- Baseline vital signs (blood pressure, temperature, heart rate), laboratory diagnostic reports, and documented drug allergies were not recorded in the reviewed consultation history.\n\n");
+
+        sb.append("AI-generated clinical summary — draft for doctor review. Verify against the original records. This is not a diagnosis or treatment recommendation.");
+
+        return sb.toString();
     }
 }

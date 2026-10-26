@@ -146,6 +146,10 @@ public class AppointmentService {
                     .orElseThrow(() -> new ResourceNotFoundException("Patient user not found with id: " + patientId));
         }
 
+        if (!lockedPatient.isEmailVerified()) {
+            throw new AppointmentValidationException("Email verification is required to book consultation appointments. Please verify your email address.");
+        }
+
         if (lockedPatient.getRole() != Role.PATIENT) {
             throw new AccessDeniedException("User account does not possess PATIENT role");
         }

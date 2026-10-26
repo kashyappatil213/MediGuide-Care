@@ -820,15 +820,131 @@
 @media (max-width: 900px) {
   .calendar-layout-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
 @media (max-width: 600px) {
+  .availability-calendar-card {
+    padding: 14px 10px;
+    border-radius: var(--radius-sm, 8px);
+    gap: 14px;
+  }
+
   .calendar-top-bar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 12px;
   }
+
+  .calendar-nav-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cal-month-stepper {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .cal-current-month-label {
+    min-width: unset;
+    font-size: 0.88rem;
+  }
+
+  .calendar-month-panel {
+    padding: 10px 6px;
+    border-radius: 8px;
+  }
+
+  .calendar-days-grid {
+    gap: 3px;
+  }
+
+  .calendar-day-cell {
+    min-height: 48px;
+    padding: 4px 2px;
+    border-radius: 6px;
+  }
+
+  .day-number-text {
+    font-size: 0.8rem;
+  }
+
+  .slot-dot-pill {
+    font-size: 0.6rem;
+    padding: 1px 3px;
+  }
+
+  .calendar-weekday-cell {
+    font-size: 0.68rem;
+  }
+
+  .calendar-agenda-panel {
+    padding: 12px 10px;
+    border-radius: 8px;
+  }
+
   .cal-form-row {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .cal-form-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .btn-add-slot-row,
+  .btn-save-availability {
+    width: 100%;
+    justify-content: center;
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 380px) {
+  .availability-calendar-card {
+    padding: 10px 6px;
+  }
+
+  .calendar-month-panel {
+    padding: 6px 3px;
+  }
+
+  .calendar-days-grid {
+    gap: 2px;
+  }
+
+  .calendar-day-cell {
+    min-height: 40px;
+    padding: 2px 1px;
+    border-radius: 4px;
+  }
+
+  .day-number-text {
+    font-size: 0.72rem;
+  }
+
+  .calendar-weekday-cell {
+    font-size: 0.62rem;
+  }
+
+  .slot-dot-pill {
+    font-size: 0.55rem;
+    padding: 0 2px;
+  }
+
+  .cal-btn-arrow {
+    width: 30px;
+    height: 30px;
+    font-size: 1rem;
+  }
+
+  .cal-btn-today {
+    padding: 4px 8px;
+    font-size: 0.76rem;
   }
 }

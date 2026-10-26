@@ -45,4 +45,30 @@ export async function loginUser({ email, password }) {
   });
 }
 
+/**
+ * Verifies an email address using a single-use verification token.
+ *
+ * @param {string} token - Raw verification token
+ * @returns {Promise<Object>} { message, verified, email }
+ */
+export async function verifyEmail(token) {
+  return apiClient('/api/v1/auth/verify-email', {
+    method: 'POST',
+    body: { token },
+  });
+}
+
+/**
+ * Requests a new email verification link with rate limiting.
+ *
+ * @param {string} email - User email address
+ * @returns {Promise<Object>} { message }
+ */
+export async function resendVerification(email) {
+  return apiClient('/api/v1/auth/resend-verification', {
+    method: 'POST',
+    body: { email: email ? email.trim() : '' },
+  });
+}
+
 export { apiClient, API_BASE_URL, verifyProtectedToken };

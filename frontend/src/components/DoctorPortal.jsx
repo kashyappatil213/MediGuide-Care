@@ -12,6 +12,7 @@ import {
   getMyDoctorProfile,
   updateMyDoctorProfile,
 } from '../services/doctorProfileApi';
+import { resendVerification } from '../services/authApi';
 import { formatDateTime, formatDateOnly } from '../utils/dateTimeUtils';
 import DoctorClinicalDrawer from './DoctorClinicalDrawer';
 import DoctorAvailabilityCalendar from './DoctorAvailabilityCalendar';
@@ -99,6 +100,11 @@ export default function DoctorPortal({ user, token }) {
   const [actionLoadingKey, setActionLoadingKey] = useState(null); // e.g. "deactivate-1" or "complete-2" or "cancel-3"
   const [actionError, setActionError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
+
+  // --- Email Verification Resend State ---
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(null);
+  const [resendError, setResendError] = useState(null);
 
   // --- Active Clinical Consultation Drawer State ---
   const [activeClinicalAppId, setActiveClinicalAppId] = useState(null);
@@ -420,6 +426,14 @@ export default function DoctorPortal({ user, token }) {
         <p className="portal-subtitle">
           {user.publicId ? `Doctor ID: ${user.publicId}` : `Doctor ID #${user.id}`} &bull; {user.email} &bull; Clinical Schedule &amp; Consultations
         </p>
+
+        {/* Quick Section Navigation for Mobile & Desktop */}
+        <nav className="portal-quick-nav" aria-label="Doctor Portal Navigation">
+          <a href="#section-doctor-profile" className="quick-nav-pill">🏥 Clinic Profile</a>
+          <a href="#section-doctor-calendar" className="quick-nav-pill">📅 Calendar &amp; Slots</a>
+          <a href="#section-doctor-appointments" className="quick-nav-pill">👥 Consultations Queue</a>
+          <a href="#section-doctor-consultation-history" className="quick-nav-pill">📜 History &amp; AI</a>
+        </nav>
       </div>
 
       {/* Global Action Alerts */}
@@ -442,6 +456,39 @@ export default function DoctorPortal({ user, token }) {
         <div className="portal-alert alert-error" role="alert">
           <span>⚠️</span>
           <div>{slotsError}</div>
+        </div>
+      )}
+
+      {/* Unverified Email Warning Banner */}
+      {user && !user.emailVerified && (
+        <div className="portal-alert alert-warning" id="doctor-unverified-email-banner" role="alert">
+          <span>⚠️</span>
+          <div>
+            <strong>Email Verification Recommended:</strong> Your account email (<code>{user.email}</code>) is unverified. Check your inbox for the verification link or request a new one to unlock schedule publishing.
+            {resendSuccess && <div style={{ color: '#0f766e', marginTop: '4px', fontWeight: 600 }}>✓ {resendSuccess}</div>}
+            {resendError && <div style={{ color: '#b91c1c', marginTop: '4px', fontWeight: 600 }}>⚠️ {resendError}</div>}
+          </div>
+          <button
+            type="button"
+            className="btn-resend-inline"
+            onClick={async () => {
+              if (resendingEmail || !user.email) return;
+              setResendingEmail(true);
+              setResendSuccess(null);
+              setResendError(null);
+              try {
+                const res = await resendVerification(user.email);
+                setResendSuccess(res.message || 'Verification link sent! Please check your inbox.');
+              } catch (err) {
+                setResendError(err.message || 'Failed to resend verification link.');
+              } finally {
+                setResendingEmail(false);
+              }
+            }}
+            disabled={resendingEmail}
+          >
+            {resendingEmail ? 'Sending...' : '✉ Resend Email'}
+          </button>
         </div>
       )}
 

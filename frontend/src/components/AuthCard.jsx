@@ -1,79 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
-import { registerUser, loginUser, verifyProtectedToken } from '../services/authApi';
-import RolePortal from './RolePortal';
+import { useState, useEffect } from 'react';
+import { registerUser, loginUser, verifyEmail, resendVerification } from '../services/authApi';
 import './AuthCard.css';
 
 /**
- * Authentication card component providing Login and Registration views
+ * Clean, modern authentication card component providing Login and Registration views
  * for Patients and Doctors in MediGuide Care.
  */
-export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
+export default function AuthCard({ authState, onLoginSuccess }) {
+  // If user is already authenticated, the portal is rendered directly by App.jsx
+  if (authState?.isAuthenticated && authState.user) {
+    return null;
+  }
+
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [apiSuccess, setApiSuccess] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // Protected API client verification states
-  const [protectedStatus, setProtectedStatus] = useState('idle'); // 'idle' | 'checking' | 'success' | 'error'
-  const [protectedData, setProtectedData] = useState(null);
-  const [protectedError, setProtectedError] = useState(null);
-  const [lastVerifiedAt, setLastVerifiedAt] = useState(null);
-
-  // Authenticated connection verification check
-  const checkProtectedConnection = useCallback(async (token) => {
-    if (!token) return;
-    setProtectedStatus('checking');
-    setProtectedError(null);
-
-    try {
-      const data = await verifyProtectedToken(token);
-      setProtectedData(data);
-      setProtectedStatus('success');
-      setLastVerifiedAt(new Date().toLocaleTimeString());
-    } catch (err) {
-      setProtectedStatus('error');
-      setProtectedData(null);
-      setProtectedError({
-        status: err.status ?? 'Unknown',
-        message: err.message || 'Verification failed. Could not validate JWT with backend.',
-        isAuthFailure: err.status === 401 || err.status === 403,
-      });
-      setLastVerifiedAt(new Date().toLocaleTimeString());
-    }
-  }, []);
-
-  // Run initial verification once when authenticated state is entered
-  useEffect(() => {
-    let active = true;
-
-    if (authState?.isAuthenticated && authState?.token) {
-      const timer = setTimeout(() => {
-        if (active) {
-          checkProtectedConnection(authState.token);
-        }
-      }, 0);
-
-      return () => {
-        active = false;
-        clearTimeout(timer);
-      };
-    } else {
-      const resetTimer = setTimeout(() => {
-        if (active) {
-          setProtectedStatus('idle');
-          setProtectedData(null);
-          setProtectedError(null);
-          setLastVerifiedAt(null);
-        }
-      }, 0);
-
-      return () => {
-        active = false;
-        clearTimeout(resetTimer);
-      };
-    }
-  }, [authState?.isAuthenticated, authState?.token, checkProtectedConnection]);
+  // Email verification states
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [emailVerifiedNotice, setEmailVerifiedNotice] = useState(null);
+  const [emailVerifyError, setEmailVerifyError] = useState(null);
+  const [showResendBox, setShowResendBox] = useState(false);
+  const [resendEmail, setResendEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(null);
+  const [resendError, setResendError] = useState(null);
 
   // Form states
   const [loginForm, setLoginForm] = useState({
@@ -87,6 +40,43 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
     password: '',
     role: 'PATIENT', // default role
   });
+
+  // Run verification if URL contains ?verify-email=<token>
+  useEffect(() => {
+    let active = true;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('verify-email');
+      if (token) {
+        const timer = setTimeout(() => {
+          if (!active) return;
+          setVerifyingEmail(true);
+          verifyEmail(token)
+            .then((res) => {
+              if (!active) return;
+              setEmailVerifiedNotice(res.message || 'Email verified successfully! You can now sign in.');
+              window.history.replaceState({}, document.title, window.location.pathname);
+            })
+            .catch((err) => {
+              if (!active) return;
+              setEmailVerifyError(err.message || 'Verification link is invalid or has expired.');
+            })
+            .finally(() => {
+              if (active) {
+                setVerifyingEmail(false);
+              }
+            });
+        }, 0);
+
+        return () => {
+          active = false;
+          clearTimeout(timer);
+        };
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }, []);
 
   // Switch between views cleanly
   const switchMode = (targetMode) => {
@@ -122,7 +112,6 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
     setApiSuccess(null);
     const errors = {};
 
-    // Basic client-side required field checks
     if (!registerForm.fullName.trim()) {
       errors.fullName = 'Full name is required';
     }
@@ -155,11 +144,10 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
         role: registerForm.role,
       });
 
-      // Feedback on success with public ID
       setApiSuccess(
         response.publicId
-          ? `Account created successfully for ${response.fullName || registerForm.fullName}! Your MediGuide ID is ${response.publicId}. You can now sign in.`
-          : `Account created successfully for ${response.fullName || registerForm.fullName}! You can now sign in.`
+          ? `Account created successfully for ${response.fullName || registerForm.fullName}! Your MediGuide ID is ${response.publicId}. A verification email was dispatched to ${registerForm.email}. You can sign in immediately!`
+          : `Account created successfully! A verification email was sent to ${registerForm.email}. You can sign in right away.`
       );
 
       // Pre-fill email in login form and switch to login tab
@@ -168,7 +156,6 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
         password: '',
       });
 
-      // Reset registration form without storing password
       setRegisterForm({
         fullName: '',
         email: '',
@@ -217,7 +204,6 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
         password: loginForm.password,
       });
 
-      // Clear entered password immediately
       setLoginForm((prev) => ({ ...prev, password: '' }));
 
       if (onLoginSuccess) {
@@ -227,7 +213,6 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
         });
       }
 
-      setApiSuccess(`Welcome back, ${response.user?.fullName || 'User'}!`);
       setFieldErrors({});
     } catch (err) {
       setApiError(err.message || 'Invalid email or password');
@@ -239,168 +224,24 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
     }
   };
 
-  // If user is currently authenticated, render active session view
-  if (authState?.isAuthenticated && authState.user) {
-    const { user, token } = authState;
+  // Handle Resend Verification Form Submission
+  const handleResendSubmit = async (e) => {
+    e.preventDefault();
+    if (resendLoading || !resendEmail.trim()) return;
 
-    // Safety guard: Fail safely if role is missing or unsupported
-    if (!user.role || (user.role !== 'PATIENT' && user.role !== 'DOCTOR')) {
-      return null;
+    setResendError(null);
+    setResendSuccess(null);
+    setResendLoading(true);
+
+    try {
+      const res = await resendVerification(resendEmail.trim());
+      setResendSuccess(res.message || 'If an unverified account exists for that email, a verification link has been sent.');
+    } catch (err) {
+      setResendError(err.message || 'Failed to resend verification link. Please wait before trying again.');
+    } finally {
+      setResendLoading(false);
     }
-
-    const isDoctor = user.role === 'DOCTOR';
-
-    return (
-      <div className="auth-container auth-container-wide" id="auth-portal">
-        <div className="auth-card">
-          <div className="session-card">
-            {/* Role-based landing portal view */}
-            <RolePortal user={user} token={token} />
-
-            <div className="session-details-grid">
-              <div className="session-detail-item">
-                <span className="session-detail-label">Assigned Role</span>
-                <span className={isDoctor ? 'badge-doctor' : 'badge-patient'}>
-                  {user.role}
-                </span>
-              </div>
-
-              <div className="session-detail-item">
-                <span className="session-detail-label">System User ID</span>
-                <span className="session-detail-value">#{user.id}</span>
-              </div>
-
-              <div className="session-detail-item">
-                <span className="session-detail-label">Authentication Token</span>
-                <span className="session-detail-value" style={{ color: '#34d399', fontSize: '0.82rem' }}>
-                  {token ? 'Active (JWT Bearer Stored)' : 'Not available'}
-                </span>
-              </div>
-
-              <div className="session-detail-item">
-                <span className="session-detail-label">Access Level</span>
-                <span className="session-detail-value" style={{ color: '#38bdf8', fontSize: '0.82rem' }}>
-                  {isDoctor ? 'Clinical Management' : 'Patient Care Portal'}
-                </span>
-              </div>
-            </div>
-
-            {/* Protected Endpoint Verification Box */}
-            <div className="protected-check-box" id="protected-verification-panel">
-              <div className="protected-check-header">
-                <div className="protected-check-title">
-                  <span className="protected-icon">🛡️</span>
-                  <div>
-                    <h4 className="protected-heading">Authenticated API Route Test</h4>
-                    <span className="protected-subtitle">
-                      Target: <code>GET /api/v1/test/protected</code>
-                    </span>
-                  </div>
-                </div>
-                <button
-                  id="btn-retry-protected"
-                  type="button"
-                  className="btn-retry"
-                  onClick={() => checkProtectedConnection(token)}
-                  disabled={protectedStatus === 'checking'}
-                  title="Send test request to backend with current in-memory JWT"
-                >
-                  {protectedStatus === 'checking' ? (
-                    <>
-                      <span className="spinner-sm"></span>
-                      Verifying...
-                    </>
-                  ) : (
-                    '↻ Re-test Connection'
-                  )}
-                </button>
-              </div>
-
-              {/* Checking State */}
-              {protectedStatus === 'checking' && (
-                <div className="protected-status-block checking">
-                  <span className="spinner-sm"></span>
-                  <span>Sending <code>Authorization: Bearer &lt;in-memory-jwt&gt;</code> to Spring Boot backend...</span>
-                </div>
-              )}
-
-              {/* Success State */}
-              {protectedStatus === 'success' && protectedData && (
-                <div className="protected-status-block success" id="protected-check-success">
-                  <div className="status-badge-row">
-                    <span className="pill-badge pill-badge-success">✓ 200 OK — Authenticated Session Active</span>
-                    {lastVerifiedAt && <span className="timestamp-hint">Verified at {lastVerifiedAt}</span>}
-                  </div>
-                  <p className="status-msg">{protectedData.message}</p>
-                  <div className="claims-grid">
-                    <div className="claim-item">
-                      <span className="claim-label">Principal ID</span>
-                      <span className="claim-val">#{protectedData.userId}</span>
-                    </div>
-                    <div className="claim-item">
-                      <span className="claim-label">Token Email</span>
-                      <span className="claim-val">{protectedData.email}</span>
-                    </div>
-                    <div className="claim-item">
-                      <span className="claim-label">Principal Role</span>
-                      <span className="claim-val">{protectedData.role}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Error / Auth Failure State */}
-              {protectedStatus === 'error' && protectedError && (
-                <div className="protected-status-block error" id="protected-check-error">
-                  <div className="status-badge-row">
-                    <span className="pill-badge pill-badge-danger">
-                      {protectedError.isAuthFailure
-                        ? `⚠️ Authentication Failed (HTTP ${protectedError.status})`
-                        : `⚠️ Backend Notice (HTTP ${protectedError.status})`}
-                    </span>
-                    {lastVerifiedAt && <span className="timestamp-hint">Checked at {lastVerifiedAt}</span>}
-                  </div>
-
-                  <p className="status-error-msg">{protectedError.message}</p>
-
-                  {protectedError.isAuthFailure ? (
-                    <div className="auth-failure-notice">
-                      <p>
-                        <strong>Authentication Error:</strong> The backend rejected this token as invalid or expired.
-                        Please sign out and sign in again to receive a fresh token.
-                      </p>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        onClick={onLogout}
-                      >
-                        Sign Out &amp; Re-login
-                      </button>
-                    </div>
-                  ) : (
-                    <small className="status-subtext">
-                      Ensure the Spring Boot backend is running on <code>http://localhost:8080</code> with PostgreSQL active.
-                    </small>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="session-actions">
-              <button
-                id="btn-signout"
-                className="btn btn-secondary"
-                onClick={onLogout}
-                type="button"
-              >
-                Sign Out / Switch Account
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  };
 
   return (
     <div className="auth-container" id="auth-portal">
@@ -441,6 +282,40 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
           </p>
         </div>
 
+        {/* Email Verification Alerts */}
+        {verifyingEmail && (
+          <div className="auth-alert auth-alert-info" role="alert">
+            <span className="auth-alert-icon">⏳</span>
+            <div>Verifying your email address with MediGuide Care...</div>
+          </div>
+        )}
+
+        {emailVerifiedNotice && (
+          <div className="auth-alert auth-alert-success" role="alert">
+            <span className="auth-alert-icon">✓</span>
+            <div>{emailVerifiedNotice}</div>
+          </div>
+        )}
+
+        {emailVerifyError && (
+          <div className="auth-alert auth-alert-error" role="alert">
+            <span className="auth-alert-icon">⚠️</span>
+            <div>
+              {emailVerifyError}
+              <div style={{ marginTop: '6px' }}>
+                <button
+                  type="button"
+                  className="btn-link"
+                  style={{ color: '#b91c1c', textDecoration: 'underline', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.85rem' }}
+                  onClick={() => setShowResendBox(true)}
+                >
+                  Resend a new verification email
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Success Alert Banner */}
         {apiSuccess && (
           <div className="auth-alert auth-alert-success" role="alert">
@@ -471,7 +346,7 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
                   type="email"
                   autoComplete="email"
                   className={`form-input ${fieldErrors.email ? 'input-error' : ''}`}
-                  placeholder="e.g. priya.rao@mediguide.local"
+                  placeholder="doctor@example.com or patient@example.com"
                   value={loginForm.email}
                   onChange={handleLoginChange}
                   disabled={loading}
@@ -521,7 +396,7 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
             </button>
 
             <div className="auth-switch">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <button
                 type="button"
                 className="auth-switch-btn"
@@ -531,6 +406,59 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
                 Create an account here
               </button>
             </div>
+
+            <div style={{ textAlign: 'center', marginTop: '12px' }}>
+              <button
+                type="button"
+                className="btn-link"
+                style={{ color: '#0284c7', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.84rem' }}
+                onClick={() => {
+                  setShowResendBox((prev) => !prev);
+                  if (!resendEmail && loginForm.email) {
+                    setResendEmail(loginForm.email);
+                  }
+                }}
+              >
+                {showResendBox ? '▲ Hide Resend Verification' : '✉ Resend Email Verification Link'}
+              </button>
+            </div>
+
+            {showResendBox && (
+              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '12px' }}>
+                <h5 style={{ margin: '0 0 6px', fontSize: '0.9rem', color: '#0f172a' }}>Resend Verification Link</h5>
+                <p style={{ margin: '0 0 10px', fontSize: '0.8rem', color: '#475569' }}>
+                  Enter your email address to receive a fresh verification link.
+                </p>
+                {resendSuccess && (
+                  <div className="auth-alert auth-alert-success" style={{ padding: '8px 12px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                    {resendSuccess}
+                  </div>
+                )}
+                {resendError && (
+                  <div className="auth-alert auth-alert-error" style={{ padding: '8px 12px', fontSize: '0.82rem', marginBottom: '10px' }}>
+                    {resendError}
+                  </div>
+                )}
+                <div className="resend-inputs-row">
+                  <input
+                    type="email"
+                    className="resend-input"
+                    placeholder="Enter your registered email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="btn-resend-action"
+                    onClick={handleResendSubmit}
+                    disabled={resendLoading || !resendEmail.trim()}
+                  >
+                    {resendLoading ? 'Sending...' : 'Send Link'}
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         )}
 
@@ -591,7 +519,7 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
                   type="text"
                   autoComplete="name"
                   className={`form-input ${fieldErrors.fullName ? 'input-error' : ''}`}
-                  placeholder="e.g. Dr. Ramesh Sen or Anjali Gupta"
+                  placeholder="e.g. Dr. Jane Smith or John Doe"
                   value={registerForm.fullName}
                   onChange={handleRegisterChange}
                   disabled={loading}
@@ -613,7 +541,7 @@ export default function AuthCard({ authState, onLoginSuccess, onLogout }) {
                   type="email"
                   autoComplete="email"
                   className={`form-input ${fieldErrors.email ? 'input-error' : ''}`}
-                  placeholder="e.g. patient.care@mediguide.local"
+                  placeholder="e.g. you@example.com"
                   value={registerForm.email}
                   onChange={handleRegisterChange}
                   disabled={loading}
