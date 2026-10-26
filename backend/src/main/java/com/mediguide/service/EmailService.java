@@ -45,9 +45,10 @@ public class EmailService {
             return false;
         }
 
+        String verificationUrl = "";
         try {
             String encodedToken = URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
-            String verificationUrl = frontendUrl + "/?verify-email=" + encodedToken;
+            verificationUrl = frontendUrl + "/?verify-email=" + encodedToken;
 
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromAddress);
@@ -65,8 +66,8 @@ public class EmailService {
             return true;
         } catch (Exception ex) {
             // Graceful degradation: Log diagnostic warning without failing user registration or workflow
-            logger.warn("Failed to dispatch verification email to recipient (publicId: {}). Cause: {}",
-                    user.getPublicId(), ex.getMessage());
+            logger.warn("SMTP email dispatch failed for recipient {}. Cause: {}", user.getEmail(), ex.getMessage());
+            logger.info("👉 [LOCAL DEV VERIFICATION LINK]: {}", verificationUrl);
             return false;
         }
     }
