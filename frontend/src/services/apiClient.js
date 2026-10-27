@@ -12,7 +12,7 @@
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    ? 'https://2592b4685bf424.lhr.life'
+    ? 'https://f39aa767c13738.lhr.life'
     : 'http://localhost:8080');
 
 /**
