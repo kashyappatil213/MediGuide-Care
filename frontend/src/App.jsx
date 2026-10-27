@@ -60,6 +60,7 @@ export default function App() {
         headers: {
           'Accept': 'application/json',
           'bypass-tunnel-reminder': 'true',
+          'ngrok-skip-browser-warning': 'true',
         },
       });
       if (response.ok) {

@@ -41,3 +41,5 @@ Thumbs.db
 .vercel
 .env*
 *secrets*.properties
+
+tools/

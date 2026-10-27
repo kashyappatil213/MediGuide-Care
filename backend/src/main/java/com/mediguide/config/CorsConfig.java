@@ -27,6 +27,8 @@ public class CorsConfig implements WebMvcConfigurer {
             "https://127.0.0.1:[*]",
             "https://*.vercel.app",
             "https://*.loca.lt",
+            "https://*.ngrok-free.app",
+            "https://*.ngrok-free.dev",
             "http://192.168.*:[*]",
             "http://10.*:[*]",
             "http://172.16.*:[*]",

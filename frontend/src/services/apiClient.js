@@ -12,7 +12,7 @@
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
   (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
-    ? 'https://f39aa767c13738.lhr.life'
+    ? 'https://backward-pennant-tinderbox.ngrok-free.dev'
     : 'http://localhost:8080');
 
 /**
@@ -47,6 +47,7 @@ export async function apiClient(endpoint, {
   const requestHeaders = {
     'Accept': 'application/json',
     'bypass-tunnel-reminder': 'true',
+    'ngrok-skip-browser-warning': 'true',
     ...headers,
   };
 
